@@ -8,6 +8,10 @@
 #include "threads/palloc.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "lib/log.h"
+
+#define LOGGING_LEVEL 6
+
 
 /* A simple implementation of malloc().
 
@@ -247,6 +251,8 @@ free (void *p)
               for (i = 0; i < d->blocks_per_arena; i++)
                 {
                   struct block *b = arena_to_block (a, i);
+                  log(L_TRACE, "Free &l_rmv being called for pointer %p", p);
+
                   list_remove (&b->free_elem);
                 }
               palloc_free_page (a);

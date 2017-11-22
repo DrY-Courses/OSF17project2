@@ -4,15 +4,16 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
-  {
-    THREAD_RUNNING,     /* Running thread. */
-    THREAD_READY,       /* Not running but ready to run. */
-    THREAD_BLOCKED,     /* Waiting for an event to trigger. */
-    THREAD_DYING        /* About to be destroyed. */
-  };
+{
+	THREAD_RUNNING,     /* Running thread. */
+	THREAD_READY,       /* Not running but ready to run. */
+	THREAD_BLOCKED,     /* Waiting for an event to trigger. */
+	THREAD_DYING        /* About to be destroyed. */
+};
 
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
@@ -81,26 +82,65 @@ typedef int tid_t;
    ready state is on the run queue, whereas only a thread in the
    blocked state is on a semaphore wait list. */
 struct thread
-  {
-    /* Owned by thread.c. */
-    tid_t tid;                          /* Thread identifier. */
-    enum thread_status status;          /* Thread state. */
-    char name[16];                      /* Name (for debugging purposes). */
-    uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
-    struct list_elem allelem;           /* List element for all threads list. */
-
-    /* Shared between thread.c and synch.c. */
-    struct list_elem elem;              /* List element. */
-
+{
+	/* Owned by thread.c. */
+	tid_t tid;                          /* Thread identifier. */
+	enum thread_status status;          /* Thread state. */
+	char name[16];                      /* Name (for debugging purposes). */
+	uint8_t *stack;                     /* Saved stack pointer. */
+	int priority;                       /* Priority. */
+	struct list_elem allelem;           /* List element for all threads list. */
+	int next_fd;                        /* Holds the next available file descriptor integer */
+	struct list children;               /* List to hold all the child processes of this process */
+	struct list files;                  /* List to hold all the open files for this process. */
+	struct shared_data* parent_share;   /* Pointer to hold the data shared with this process' parent (There is only one) */
+	struct file* executable; /* Holds the executable file for this process. */
+  struct semaphore* semaUpInProcessExit;
+	/* Shared between thread.c and synch.c. */
+	struct list_elem elem;              /* List element. */
+  int* exitStatus;
+	struct lock file_lock;
 #ifdef USERPROG
-    /* Owned by userprog/process.c. */
+	/* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 
-    /* Owned by thread.c. */
-    unsigned magic;                     /* Detects stack overflow. */
-  };
+	/* Owned by thread.c. */
+	unsigned magic;                     /* Detects stack overflow. */
+};
+
+struct thread_tid {
+		int tid;
+	struct list_elem elem;
+	struct semaphore* semaUpInProcessExit;
+	bool running;
+int* exitStatus;
+};
+
+/*
+  Holds data that needs to be shared between each parent process and its children.
+  Each shared_data struct is initialized by the child process, but can be de-allocated
+  by either the parent of child, depending on which process exits first.
+*/
+// struct shared_data {
+//     int ref_count;
+//     struct lock ref_lock;
+//     int exit_code;
+//     tid_t tid;
+//     struct semaphore dead_sema;
+//     struct list_elem child_elem;
+// };
+
+/*
+    Holds a mapping between an integer "file descriptor" and the underlying
+    struct file*. File descriptors are unique per process (not globally), and
+    are removed when the file is closed.
+*/
+struct file_map {
+	int fd;                               /* Holds the file descriptor id for this file. */
+	struct file* file;                    /* Holds the actual file* for this file. */
+	struct list_elem file_elem;           /* Allows the file to be an element in a list. */
+};
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.

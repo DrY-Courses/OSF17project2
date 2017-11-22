@@ -6,7 +6,9 @@
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
+#include "lib/log.h"
 
+#define LOGGING_LEVEL 6
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
@@ -171,6 +173,7 @@ inode_close (struct inode *inode)
   if (--inode->open_cnt == 0)
     {
       /* Remove from inode list and release lock. */
+      log(L_TRACE, "Removing from list in inode_close");
       list_remove (&inode->elem);
 
       /* Deallocate blocks if removed. */

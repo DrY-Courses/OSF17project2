@@ -36,6 +36,7 @@
 #include "devices/ide.h"
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
+#include "log.h"
 #endif
 
 /* Page directory with kernel mappings only. */
@@ -76,12 +77,13 @@ int main (void) NO_RETURN;
 int
 main (void)
 {
+  log(L_TRACE, "main init hit");
   char **argv;
 
   /* Clear BSS. */
   bss_init ();
 
-  /* Break command line into arguments and parse options. */
+  /* Break command line into arguments ansyscall handler d parse options. */
   argv = read_command_line ();
   argv = parse_options (argv);
 
